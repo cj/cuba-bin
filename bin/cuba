@@ -1,0 +1,16 @@
+#!/usr/bin/env ruby
+
+if ARGV.empty?
+  puts "usage: cutest [-v] [-r lib] [-o test] [-s scope] file ..."
+  exit
+end
+
+lib = File.expand_path('../../lib', __FILE__)
+$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+
+require "cuba/bin"
+require "clap"
+
+Clap.run ARGV,
+  "s"      => Cuba::Bin.method(:server),
+  "-v"      => -> { puts Cuba::Bin::VERSION }
