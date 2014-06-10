@@ -5,7 +5,8 @@ module Cuba
     class Daemon
       extensions = %w(
         builder coffee creole css slim erb erubis jbuilder
-        slim mote haml html js less liquid mab markdown md mdown mediawiki mkd mw
+        slim mote haml html js styl dom
+        less liquid mab markdown md mdown mediawiki mkd mw
         nokogiri radius rb rdoc rhtml ru
         sass scss str textile txt wiki yajl yml
         env.*
