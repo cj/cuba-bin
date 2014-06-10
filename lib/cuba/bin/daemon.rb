@@ -61,7 +61,6 @@ module Cuba
 
       # TODO maybe consider doing like: http://puma.bogomips.org/SIGNALS.html
       def reload_everything
-        log 'reloading everything'
         Process.kill(:QUIT, puma_pid)
         Process.wait(puma_pid)
         start_puma
@@ -76,12 +75,15 @@ module Cuba
 
       # tell puma to gracefully shut down workers
       def graceful_restart
-        log 'graceful restart'
-        Process.kill(:SIGUSR2, puma_pid)
+        pid = puma_pid
+        Process.kill(:INT, pid)
+        Process.wait(pid)
+        start_puma
       end
 
       def handle_change(modified, added, removed)
         log "File change event detected: #{{modified: modified, added: added, removed: removed}.inspect}"
+
         if (modified + added + removed).index {|f| f =~ options[:full]}
           reload_everything
         else
