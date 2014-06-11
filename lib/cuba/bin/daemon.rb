@@ -18,14 +18,12 @@ module Cuba::Bin
     # todo> make configurable
     IGNORE_PATTERNS             = [/\.direnv/, /\.sass-cache/, /^tmp/]
 
-    attr_accessor :options, :puma_args
-    attr_accessor :puma_pid
+    attr_accessor :options, :unicorn_args
+    attr_accessor :unicorn_pid
 
-    def initialize(puma_args)
-      puma_args.concat ['-w', '1'] unless puma_args.include? '-w'
-
-      @puma_args = puma_args
-      # @options, @puma_args = options, puma_args
+    def initialize(unicorn_args)
+      @unicorn_args = unicorn_args
+      # @options, @unicorn_args = options, unicorn_args
       @options = {}
       options[:pattern]       ||= DEFAULT_RELOAD_PATTERN
       options[:full]          ||= DEFAULT_FULL_RELOAD_PATTERN
@@ -33,12 +31,11 @@ module Cuba::Bin
       self
     end
 
-
     def log(msg)
       $stderr.puts msg
     end
 
-    def start_puma
+    def start_unicorn
       ENV['RACK_ENV'] ||= 'development'
 
       envs     = {}
@@ -58,26 +55,31 @@ module Cuba::Bin
         end
       end
 
-      @puma_pid = Kernel.spawn(envs, 'puma', *puma_args)
+      @unicorn_pid = Kernel.spawn(envs, 'unicorn', '-c', unicorn_config, *unicorn_args)
     end
 
-    # TODO maybe consider doing like: http://puma.bogomips.org/SIGNALS.html
+    def unicorn_config
+      File.expand_path 'unicorn.conf.rb', File.dirname(__FILE__)
+    end
+
+    # TODO maybe consider doing like: http://unicorn.bogomips.org/SIGNALS.html
     def reload_everything
-      Process.kill(:QUIT, puma_pid)
-      Process.wait(puma_pid)
-      start_puma
+      Process.kill(:QUIT, unicorn_pid)
+      Process.wait(unicorn_pid)
+      start_unicorn
     end
 
     def shutdown
       listener.stop
-      Process.kill(:TERM, puma_pid)
-      Process.wait(puma_pid)
+      Process.kill(:TERM, unicorn_pid)
+      Process.wait(unicorn_pid)
       exit
     end
 
-    # tell puma to gracefully shut down workers
-    def graceful_restart
-      Process.kill(:SIGUSR1, puma_pid)
+    # tell unicorn to gracefully shut down workers
+    def hup_unicorn
+      log "hupping #{unicorn_pid}"
+      Process.kill(:HUP, unicorn_pid)
     end
 
     def handle_change(modified, added, removed)
@@ -86,7 +88,7 @@ module Cuba::Bin
       if (modified + added + removed).index {|f| f =~ options[:full]}
         reload_everything
       else
-        graceful_restart
+        hup_unicorn
       end
     end
 
@@ -107,7 +109,7 @@ module Cuba::Bin
       Signal.trap("INT") { |signo| that.shutdown }
       Signal.trap("EXIT") { |signo| that.shutdown }
       listener.start
-      start_puma
+      start_unicorn
 
       # And now we just want to keep the thread alive--we're just waiting around to get interrupted at this point.
       sleep(99999) while true
