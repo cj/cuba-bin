@@ -1,5 +1,5 @@
 worker_processes Integer(ENV["CUBA_BIN_WORKERS"] || 2)
-timeout          Integer(ENV['CUBA_BIN_TIMEOUT'] || 30)
+timeout          Integer(ENV['CUBA_BIN_TIMEOUT'] || 15)
 listen           Integer(ENV['CUBA_BIN_PORT']    || 8080)
 
 # combine Ruby 2.0.0dev or REE with "preload_app true" for memory savings
