@@ -23,6 +23,8 @@ module Cuba
       attr_accessor :puma_pid
 
       def initialize(puma_args)
+        puma_args.concat ['-w', '1'] unless puma_args.include? '-w'
+
         @puma_args = puma_args
         # @options, @puma_args = options, puma_args
         @options = {}
@@ -76,10 +78,7 @@ module Cuba
 
       # tell puma to gracefully shut down workers
       def graceful_restart
-        pid = puma_pid
-        Process.kill(:INT, pid)
-        Process.wait(pid)
-        start_puma
+        Process.kill(:SIGUSR1, puma_pid)
       end
 
       def handle_change(modified, added, removed)
