@@ -1,31 +1,33 @@
-require "cuba/bin/version"
+require "cuba"
 require "cuba/bin/daemon"
 
-module Cuba
-  module Bin
-    extend self
+module Cuba::Bin
+  unless defined? VERSION
+    VERSION = '0.1.1'
+  end
 
-    def server
-      Daemon.new(argv).run
+  extend self
+
+  def server
+    Daemon.new(argv).run
+  end
+
+  private
+
+  def argv
+    @args ||= begin
+      ARGV.shift
+      ARGV
     end
 
-    private
-
-    def argv
-      @args ||= begin
-        ARGV.shift
-        ARGV
+    @args.each_with_index do |arg, i|
+      if arg[/\s/]
+        @args[i] = "\"#{arg}\""
+      else
+        @args[i] = arg
       end
-
-      @args.each_with_index do |arg, i|
-        if arg[/\s/]
-          @args[i] = "\"#{arg}\""
-        else
-          @args[i] = arg
-        end
-      end
-
-      @args
     end
+
+    @args
   end
 end
