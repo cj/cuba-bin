@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 if ARGV.empty?
-  puts "usage: cuba [s *args]"
+  puts "usage: cuba [server (s) *args] [deploy (d) *args]"
   exit
 end
 
@@ -11,6 +11,27 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require "cuba/bin"
 require "clap"
 
+ENV['RACK_ENV'] ||= 'development'
+
+env      = '.env'
+rack_env = "#{env}.#{ENV['RACK_ENV']}"
+
+if File.file? rack_env
+  env = rack_env
+elsif !File.file? env
+  env = false
+end
+
+if env
+  File.foreach env do |line|
+    key, value = line.split "="
+    ENV[key] = value.gsub('\n', '').strip
+  end
+end
+
 Clap.run ARGV,
+  "server" => Cuba::Bin.method(:server),
   "s"      => Cuba::Bin.method(:server),
-  "-v"      => -> { puts Cuba::Bin::VERSION }
+  "deploy" => Cuba::Bin.method(:deploy),
+  "d"      => Cuba::Bin.method(:deploy),
+  "-v"     => -> { puts Cuba::Bin::VERSION }

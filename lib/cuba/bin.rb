@@ -3,16 +3,32 @@ require "cuba/bin/daemon"
 
 module Cuba::Bin
   unless defined? VERSION
-    VERSION = '0.2.2'
+    VERSION = '0.3.0'
   end
 
   extend self
 
   def server
-    Daemon.new(argv).run
+    Daemon.new.run
   end
 
-  private
+  def deploy
+    if ENV['CUBA_BIN_DEPLOY_PATH']
+      require ENV['CUBA_BIN_DEPLOY_PATH']
+    else
+      %w(config/deploy deploy).each do |file|
+        path = Dir.pwd + "/#{file}.rb"
+
+        if File.file? path
+          break require path
+        end
+      end
+    end
+
+    if defined? Deploy
+      Deploy.new.run
+    end
+  end
 
   def argv
     @args ||= begin
